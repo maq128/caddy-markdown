@@ -1,0 +1,51 @@
+{
+    order markdown before file_server
+}
+
+:81 {
+    @markdowns path *.md
+    route @markdowns {
+        markdown {
+            scheme normal
+        }
+    }
+
+    file_server {
+        index index.html
+    }
+}
+
+:80 {
+    route /index.md {
+        markdown
+        file_server
+    }
+
+    route /simple.md {
+        try_files /example.md
+        markdown {
+            scheme simple
+        }
+        file_server
+    }
+
+    route /normal.md {
+        try_files /example.md
+        markdown {
+            scheme normal
+        }
+        file_server
+    }
+
+    route /github.md {
+        try_files /example.md
+        markdown {
+            scheme /github.tmpl
+        }
+        file_server
+    }
+
+    file_server {
+        index index.html
+    }
+}
