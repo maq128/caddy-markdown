@@ -2,11 +2,34 @@
     order markdown before file_server
 }
 
-:81 {
-    @markdowns path *.md
-    route @markdowns {
+:80 {
+    markdown /index.md
+
+    route /simple.md {
+        try_files /example.md
         markdown {
-            scheme normal
+            template simple
+        }
+    }
+
+    route /normal.md {
+        try_files /example.md
+        markdown {
+            template normal
+        }
+    }
+
+    route /github.md {
+        try_files /example.md
+        markdown {
+            template /github.tmpl
+        }
+    }
+
+    route /bad-template.md {
+        try_files /example.md
+        markdown {
+            template bad-template
         }
     }
 
@@ -15,37 +38,18 @@
     }
 }
 
-:80 {
-    route /index.md {
-        markdown
-        file_server
-    }
-
-    route /simple.md {
-        try_files /example.md
+:81 {
+    @markdowns path *.md
+    route @markdowns {
         markdown {
-            scheme simple
+            template normal
         }
-        file_server
     }
 
-    route /normal.md {
-        try_files /example.md
-        markdown {
-            scheme normal
-        }
-        file_server
-    }
+    file_server
+}
 
-    route /github.md {
-        try_files /example.md
-        markdown {
-            scheme /github.tmpl
-        }
-        file_server
-    }
-
-    file_server {
-        index index.html
-    }
+:82 {
+    markdown
+    file_server
 }

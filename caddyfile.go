@@ -12,7 +12,7 @@ func init() {
 // parseCaddyfile sets up the handler from Caddyfile tokens. Syntax:
 //
 //     markdown [<matcher>] {
-//         scheme <name>
+//         template <name>
 //     }
 //
 func parseCaddyfile(h httpcaddyfile.Helper) (caddyhttp.MiddlewareHandler, error) {
@@ -21,8 +21,8 @@ func parseCaddyfile(h httpcaddyfile.Helper) (caddyhttp.MiddlewareHandler, error)
 	for h.Next() {
 		for h.NextBlock(0) {
 			switch h.Val() {
-			case "scheme":
-				if !h.Args(&md.Scheme) {
+			case "template":
+				if !h.Args(&md.Template) {
 					return nil, h.ArgErr()
 				}
 			}

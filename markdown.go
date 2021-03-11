@@ -26,8 +26,13 @@ func init() {
 
 // Markdown is a middleware which render response bodies as markdown.
 type Markdown struct {
-	// The scheme by which to render markdown. Default is "simple".
-	Scheme string `json:"scheme,omitempty"`
+	// The template by which to render markdown. Default is "simple".
+	Template string `json:"template,omitempty"`
+
+	// The MIME types for which to render markdown. It is important to use
+	// this if the route matchers do not exclude images or other binary files.
+	// Default is text/markdown.
+	MIMETypes []string `json:"mime_types,omitempty"`
 }
 
 var bufPool = sync.Pool{
@@ -46,9 +51,12 @@ func (Markdown) CaddyModule() caddy.ModuleInfo {
 
 // Provision provisions md.
 func (md *Markdown) Provision(ctx caddy.Context) error {
-	caddy.Log().Info("Provision:", zap.String("scheme", md.Scheme))
-	if md.Scheme == "" {
-		md.Scheme = "simple"
+	caddy.Log().Info("Provision:", zap.String("template", md.Template))
+	if md.MIMETypes == nil {
+		md.MIMETypes = []string{"text/markdown"}
+	}
+	if md.Template == "" {
+		md.Template = "simple"
 	}
 	return nil
 }
@@ -59,16 +67,24 @@ func (md *Markdown) Validate() error {
 }
 
 func (md *Markdown) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyhttp.Handler) error {
-	caddy.Log().Info("ServeHTTP:", zap.String("scheme", md.Scheme), zap.String("path", r.URL.Path))
+	caddy.Log().Info("ServeHTTP:", zap.String("template", md.Template), zap.String("path", r.URL.Path))
 	buf := bufPool.Get().(*bytes.Buffer)
 	buf.Reset()
 	defer bufPool.Put(buf)
 
-	alwaysBuf := func(status int, header http.Header) bool {
-		return true
+	// shouldBuf determines whether to render markdown on this response,
+	// since generally we will not want to render for images or CSS, etc.
+	shouldBuf := func(status int, header http.Header) bool {
+		ct := header.Get("Content-Type")
+		for _, mt := range md.MIMETypes {
+			if strings.Contains(ct, mt) {
+				return true
+			}
+		}
+		return false
 	}
 
-	rec := caddyhttp.NewResponseRecorder(w, buf, alwaysBuf)
+	rec := caddyhttp.NewResponseRecorder(w, buf, shouldBuf)
 
 	err := next.ServeHTTP(rec, r)
 	if err != nil {
@@ -83,12 +99,12 @@ func (md *Markdown) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddy
 		return caddyhttp.Error(http.StatusInternalServerError, err)
 	}
 
-	tmpl, ok := templates[md.Scheme]
+	tmpl, ok := templates[md.Template]
 	if !ok {
 		// if not a built-in template, try as resource file
 		buf.Reset()
 		fs := http.Dir(".")
-		file, err := fs.Open(md.Scheme)
+		file, err := fs.Open(md.Template)
 		if err == nil {
 			defer file.Close()
 			io.Copy(buf, file)

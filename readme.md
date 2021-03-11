@@ -12,14 +12,17 @@ docker build -t caddy2-markdown .
 ```
 
 ```sh
-xcaddy build v2.3.0 --with github.com/maq128/caddy-markdown@v0.0.1=.
-
 cd test
+xcaddy build v2.3.0 --with github.com/maq128/caddy-markdown@v0.0.1=..
 caddy run
 
 http://localhost/
-http://localhost/index.md
-http://localhost/simple.md
-http://localhost/normal.md
-http://localhost/github.md
+```
+
+# Windows 系统中为 .md 文件指定 MIME type
+
+在系统注册表中添加如下内容：
+```
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.md]
+"Content Type"="text/markdown"
 ```
